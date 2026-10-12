@@ -1182,200 +1182,32 @@ async function runSync(
   }
 }
 
-function isSidebarCandidate(element) {
-  if (!element) {
-    return false;
-  }
-  if (element.querySelector('[data-testid="chat-history"]')) {
-    return true;
-  }
-  if (element.querySelector('a[href^="/c/"]')) {
-    return true;
-  }
-  if (element.querySelector('a[href^="https://chatgpt.com/c/"]')) {
-    return true;
-  }
-  return false;
-}
-
-function getSidebarScore(element) {
-  if (!isSidebarCandidate(element)) {
-    return 0;
-  }
-
-  let score = 1;
-  if (element.matches('[data-testid="sidebar"]')) {
-    score += 5;
-  }
-  if (element.matches("aside, nav")) {
-    score += 3;
-  }
-  if (findSidebarAnchor(element)) {
-    score += 4;
-  }
-  if (element.querySelector('[data-testid="chat-history"]')) {
-    score += 2;
-  }
-  if (element.querySelector('a[href^="/c/"], a[href^="https://chatgpt.com/c/"]')) {
-    score += 1;
-  }
-  if (element.matches('[data-testid="chat-history"]') || isScrollable(element)) {
-    score -= 3;
-  }
-  return score;
-}
-
-function findSidebarRoot() {
-  const candidates = new Set();
-  const selectors = [
-    '[data-testid="sidebar"]',
-    'nav[aria-label="Chat history"]',
-    'nav[role="navigation"]',
-    'aside',
-    'nav',
-    '[data-testid="chat-history"]',
-    'a[href^="/c/"]',
-    'a[href^="https://chatgpt.com/c/"]'
-  ];
-
-  for (const selector of selectors) {
-    for (const seed of document.querySelectorAll(selector)) {
-      let candidate = seed;
-      while (candidate && candidate !== document.body) {
-        if (isSidebarCandidate(candidate)) {
-          candidates.add(candidate);
-        }
-        candidate = candidate.parentElement;
-      }
-    }
-  }
-
-  let best = null;
-  let bestScore = 0;
-  for (const candidate of candidates) {
-    const score = getSidebarScore(candidate);
-    if (score > bestScore) {
-      best = candidate;
-      bestScore = score;
-    }
-  }
-
-  return best;
-}
-
-function findSidebarAnchor(sidebar) {
-  if (!sidebar) {
-    return null;
-  }
-  const selectors = [
-    '[data-testid="accounts-profile-button"]',
-    '[data-testid="user-menu"]',
-    '[data-testid="profile-button"]',
-    'button[aria-label*="account" i]',
-    'button[aria-label*="profile" i]',
-    'button[aria-label*="user" i]'
-  ];
-  for (const selector of selectors) {
-    const anchor = sidebar.querySelector(selector);
-    if (anchor) {
-      return anchor;
-    }
-  }
-  return null;
-}
-
-function findAccountButton(sidebar) {
-  if (!sidebar) {
-    return null;
-  }
-  return sidebar.querySelector('[data-testid="accounts-profile-button"]');
-}
-
-function findInsertParent(anchor, sidebar) {
-  let parent = anchor.parentElement;
-  while (parent && parent !== sidebar && isScrollable(parent)) {
-    parent = parent.parentElement;
-  }
-  return parent || anchor.parentElement;
-}
-
-function findInsertAfter(anchor, insertParent) {
-  let node = anchor;
-  while (node && node.parentElement && node.parentElement !== insertParent) {
-    node = node.parentElement;
-  }
-  return node;
-}
-
-function isScrollable(element) {
-  if (!element) {
-    return false;
-  }
-  const style = window.getComputedStyle(element);
-  const overflowY = style.overflowY || style.overflow;
-  if (overflowY !== "auto" && overflowY !== "scroll") {
-    return false;
-  }
-  return element.scrollHeight > element.clientHeight + 4;
-}
-
-function findScrollableList(sidebar) {
-  if (!sidebar) {
-    return null;
-  }
-  const elements = Array.from(sidebar.querySelectorAll("*"));
-  for (const element of elements) {
-    if (!isScrollable(element)) {
-      continue;
-    }
-    if (
-      element.querySelector('a[href^="/c/"]') ||
-      element.querySelector('a[href^="https://chatgpt.com/c/"]') ||
-      element.querySelector('[data-testid="chat-history"]')
-    ) {
-      return element;
-    }
-  }
-  return elements.find((element) => isScrollable(element)) || null;
-}
-
-function isMountedInScrollableList(sidebar) {
-  const scrollable = findScrollableList(sidebar);
-  return Boolean(scrollable && uiState && scrollable.contains(uiState.container));
-}
+const WIDGET_WIDTH_PX = 320;
+const WIDGET_VIEWPORT_INSET_PX = 16;
 
 function mountUi() {
   if (!uiState) {
     return false;
   }
-  const sidebar = findSidebarRoot();
-  if (!sidebar) {
-    uiState.container.style.display = "none";
-    return false;
-  }
-  const accountButton = findAccountButton(sidebar);
-  const anchor = accountButton || findSidebarAnchor(sidebar);
-  const scrollable = findScrollableList(sidebar);
-  uiState.container.style.display = "block";
-  uiState.container.dataset.location = "sidebar";
-  uiState.container.style.margin = "8px 0 12px";
-  uiState.container.style.padding = "0 12px";
-  uiState.container.style.position = "relative";
+  const container = uiState.container;
+  const mountParent = document.body || document.documentElement;
 
-  if (anchor) {
-    const insertParent = findInsertParent(anchor, sidebar);
-    if (insertParent) {
-      const insertAfter = findInsertAfter(anchor, insertParent);
-      insertParent.insertBefore(uiState.container, insertAfter.nextSibling);
-      return true;
-    }
-  }
+  container.style.display = "block";
+  container.dataset.location = "fixed";
+  container.style.position = "fixed";
+  container.style.right = `${WIDGET_VIEWPORT_INSET_PX}px`;
+  container.style.bottom = `${WIDGET_VIEWPORT_INSET_PX}px`;
+  container.style.left = "auto";
+  container.style.top = "auto";
+  container.style.margin = "0";
+  container.style.padding = "0";
+  container.style.width = `${WIDGET_WIDTH_PX}px`;
+  container.style.maxWidth = `calc(100vw - ${WIDGET_VIEWPORT_INSET_PX * 2}px)`;
+  container.style.zIndex = "2147483000";
 
-  if (scrollable && scrollable.parentElement) {
-    sidebar.insertBefore(uiState.container, scrollable);
-    return true;
+  if (container.parentElement !== mountParent) {
+    mountParent.appendChild(container);
   }
-  sidebar.appendChild(uiState.container);
   return true;
 }
 
@@ -1387,8 +1219,9 @@ function createUi() {
   const container = document.createElement("div");
   container.id = "chatgpt-sync-widget";
   container.style.display = "none";
-  container.style.width = "100%";
   container.style.boxSizing = "border-box";
+  container.style.backgroundColor = "#121212";
+  container.style.borderRadius = "12px";
   container.dataset.expanded = "false";
 
   const shadow = container.attachShadow({ mode: "open" });
@@ -1399,13 +1232,16 @@ function createUi() {
         display: block;
         width: 100%;
         box-sizing: border-box;
+        background-color: #121212;
+        border-radius: 12px;
+        isolation: isolate;
       }
       :host([data-expanded="false"]) .details {
         display: none;
       }
       .panel {
         width: 100%;
-        background: #121212;
+        background-color: #121212;
         color: #f5f5f5;
         border-radius: 12px;
         padding: 10px;
@@ -1414,6 +1250,8 @@ function createUi() {
         display: grid;
         gap: 10px;
         box-sizing: border-box;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
       }
       .title {
         font-size: 13px;
@@ -1564,7 +1402,7 @@ function createUi() {
     </div>
   `;
 
-  document.documentElement.appendChild(container);
+  (document.body || document.documentElement).appendChild(container);
 
   uiState = {
     container,
@@ -1642,16 +1480,12 @@ function createUi() {
   mountUi();
 
   const observer = new MutationObserver(() => {
-    const sidebar = findSidebarRoot();
-    if (
-      !uiState.container.isConnected ||
-      uiState.container.style.display === "none" ||
-      isMountedInScrollableList(sidebar)
-    ) {
+    const mountParent = document.body || document.documentElement;
+    if (!uiState.container.isConnected || uiState.container.parentElement !== mountParent) {
       mountUi();
     }
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 createUi();

@@ -97,8 +97,8 @@ Full inventory behavior:
 
 ### In-page widget
 
-- Rendered inside the left sidebar, below the account section in the non-scrollable area.
-- Fits the sidebar width and does not overlap the scrollable chat list.
+- Fixed to the viewport bottom-right (`position: fixed`, 16px inset from right and bottom).
+- 320px wide (shrinks on narrow viewports); mounted on `document.body` with a high z-index so it floats above the page.
 - Collapsed by default (title bar only); clicking the title bar expands to the full view.
 - Title bar indicator shows sync state (spinner while syncing, green when synced).
 - Expanded view displays status, progress bar, and a single Sync now button.

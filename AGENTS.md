@@ -27,8 +27,9 @@ This file documents project-specific instructions for coding agents.
 
 ## UI placement
 
-- The in-page widget must live in the non-scrollable section of the left sidebar, just below the account section.
-- The widget must fit the sidebar width and avoid overlaying the chat list.
+- The in-page widget must be fixed to the viewport bottom-right (`position: fixed`, 16px inset from right and bottom).
+- Default width is 320px; use `max-width: calc(100vw - 32px)` on narrow viewports.
+- Mount on `document.body` with a high z-index so it stays above page content.
 
 ## Storage
 

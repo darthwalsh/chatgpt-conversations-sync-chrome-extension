@@ -29,7 +29,7 @@ A Chrome MV3 extension that keeps your ChatGPT conversations synced to a local f
 
 ## Usage
 
-- The in-page widget appears in the left sidebar below the account section and is collapsed by default.
+- The in-page widget is fixed to the bottom-right of the ChatGPT page (320px wide, 16px from the edges) and is collapsed by default.
 - Click the title bar to expand/collapse. The dot shows sync state (spinner while syncing, green when synced).
 - Click Sync now to run a manual sync (folder selection/permission is prompted if needed).
 - Click the gear icon to open the options page.
