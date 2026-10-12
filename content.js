@@ -34,12 +34,32 @@ function formatCount(value) {
 }
 
 function toEpochSeconds(value) {
+  if (value == null || value === "") {
+    return 0;
+  }
   if (typeof value === "number" && Number.isFinite(value)) {
+    if (value > 1e12) {
+      return value / 1000;
+    }
     return value;
   }
   if (typeof value === "string") {
-    const parsed = Number.parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : 0;
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 0;
+    }
+    if (/[^\d.]/.test(trimmed)) {
+      const parsedMs = Date.parse(trimmed);
+      return Number.isFinite(parsedMs) ? parsedMs / 1000 : 0;
+    }
+    const parsed = Number.parseFloat(trimmed);
+    if (!Number.isFinite(parsed)) {
+      return 0;
+    }
+    if (parsed > 1e12) {
+      return parsed / 1000;
+    }
+    return parsed;
   }
   return 0;
 }
@@ -1094,8 +1114,8 @@ async function runSync(
 
         currentIds.add(id);
         const createTimeSeconds =
-          toEpochSeconds(item.create_time) ||
-          (metaMap[id] ? toEpochSeconds(metaMap[id].create_time) : 0);
+          (metaMap[id] ? toEpochSeconds(metaMap[id].create_time) : 0) ||
+          toEpochSeconds(item.create_time);
         const existingMetaUpdate = metaMap[id] ? toEpochSeconds(metaMap[id].update_time) : 0;
         const mergedUpdateTime = Math.max(updateTime, knownTime, existingMetaUpdate);
         metaMap[id] = {
